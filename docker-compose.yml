@@ -1,25 +1,47 @@
+# Common base configuration that all services inherit
 x-basics: &basics
   env_file:
     - .env
-services: 
+  restart: unless-stopped
+
+services:
   glpi:
     image: diouxx/glpi
-    container_name : assets
+
     <<: *basics
-    ports:
-      - "8069:80"
-    networks:
-      core:
-        ipv4_address: 172.20.0.40
-    environment: 
+
+    environment:
       - MYSQL_HOST=maria-db
       - MYSQL_DATABASE=glpi
       - MYSQL_USER=glpi
       - MYSQL_PASSWORD=${GLPI_PASSWORD}
+      - TZ=${TZ}
+
+    volumes:
+      - ~/volumes/glpi/config:/var/www/html/config
+      - ~/volumes/glpi/files:/var/www/html/files
+      - ~/volumes/glpi/plugins:/var/www/html/plugins
+
+    networks:
+      core:
+        ipv4_address: 172.20.0.40
+      internal:
+
+    depends_on:
+      maria-db:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/status.php"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 60s
+
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.firefly.rule=Host(`${GLPI_SUBDOMAIN}.${ROOT_DOMAIN}`)"
-      - "traefik.http.routers.firefly.entrypoints=websecure"
-      - "traefik.http.routers.firefly.middlewares=cloudflare-ipallowlist@file"
-      - "traefik.http.routers.firefly.tls.certresolver=cloudflare"
-      - "traefik.http.services.firefly.loadbalancer.server.port=8069"
+      - "traefik.http.routers.glpi.rule=Host(`${GLPI_SUBDOMAIN}.${ROOT_DOMAIN}`)"
+      - "traefik.http.routers.glpi.entrypoints=websecure"
+      - "traefik.http.routers.glpi.middlewares=cloudflare-ipallowlist@file"
+      - "traefik.http.routers.glpi.tls.certresolver=cloudflare"
+      - "traefik.http.services.glpi.loadbalancer.server.port=80"
