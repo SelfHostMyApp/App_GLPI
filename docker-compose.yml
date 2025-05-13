@@ -7,7 +7,7 @@ x-basics: &basics
 services:
   glpi:
     image: diouxx/glpi
-
+    container_name: glpi
     <<: *basics
     ports:
       - "${GLPI_PORT:-469}:80"
