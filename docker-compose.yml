@@ -12,8 +12,8 @@ services:
 
     environment:
       - MYSQL_HOST=maria-db
-      - MYSQL_DATABASE=glpi
-      - MYSQL_USER=glpi
+      - MYSQL_DATABASE=${GLPI_DB_NAME}
+      - MYSQL_USER=${GLPI_DB_USER}
       - MYSQL_PASSWORD=${GLPI_PASSWORD}
       - TZ=${TZ}
 
