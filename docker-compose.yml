@@ -1,0 +1,25 @@
+x-basics: &basics
+  env_file:
+    - .env
+services: 
+  glpi:
+    image: diouxx/glpi
+    container_name : assets
+    <<: *basics
+    ports:
+      - "8069:80"
+    networks:
+      core:
+        ipv4_address: 172.20.0.40
+    environment: 
+      - MYSQL_HOST=maria-db
+      - MYSQL_DATABASE=glpi
+      - MYSQL_USER=glpi
+      - MYSQL_PASSWORD=${GLPI_PASSWORD}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.firefly.rule=Host(`${GLPI_SUBDOMAIN}.${ROOT_DOMAIN}`)"
+      - "traefik.http.routers.firefly.entrypoints=websecure"
+      - "traefik.http.routers.firefly.middlewares=cloudflare-ipallowlist@file"
+      - "traefik.http.routers.firefly.tls.certresolver=cloudflare"
+      - "traefik.http.services.firefly.loadbalancer.server.port=8069"
