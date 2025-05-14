@@ -28,13 +28,12 @@ services:
         ipv4_address: 172.20.0.40
       internal:
 
-
     depends_on:
       maria-db:
         condition: service_healthy
 
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:80/status.php" ]
+      test: ["CMD", "curl", "-f", "http://localhost:80/status.php"]
       interval: 30s
       timeout: 15s
       retries: 3
@@ -47,3 +46,5 @@ services:
       - "traefik.http.routers.glpi.middlewares=cloudflare-ipallowlist@file"
       - "traefik.http.routers.glpi.tls.certresolver=cloudflare"
       - "traefik.http.services.glpi.loadbalancer.server.port=80"
+      - "traefik.http.routers.glpi.middlewares=${GLPI_AUTH:+glpi-auth}"
+      - "traefik.http.middlewares.glpi-auth.basicauth.users=${GLPI_AUTH}"
