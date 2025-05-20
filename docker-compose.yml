@@ -10,7 +10,7 @@ services:
     container_name: glpi
     <<: *basics
     ports:
-      - "${GLPI_PORT:-469}:80"
+      - "${GLPI_PORT:-1021}:80"
     environment:
       - MYSQL_HOST=${MARIA_DB_HOST:-maria-db}
       - MYSQL_DATABASE=${GLPI_DB_NAME}
@@ -25,7 +25,7 @@ services:
 
     networks:
       core:
-        ipv4_address: 172.20.0.40
+        ipv4_address: 172.20.0.21
       internal:
 
     depends_on:
