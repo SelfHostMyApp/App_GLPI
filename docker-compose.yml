@@ -19,9 +19,9 @@ services:
       - TZ=${TZ}
 
     volumes:
-      - ~/volumes/glpi/config:/var/www/html/config
-      - ~/volumes/glpi/files:/var/www/html/files
-      - ~/volumes/glpi/plugins:/var/www/html/plugins
+      - ./volumes/glpi/config:/var/www/html/config
+      - ./volumes/glpi/files:/var/www/html/files
+      - ./volumes/glpi/plugins:/var/www/html/plugins
 
     networks:
       core:
