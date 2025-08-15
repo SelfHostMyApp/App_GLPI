@@ -1,0 +1,20 @@
+[Unit]
+Description=GLPI Application
+After=glpi-mariadb.service
+Wants=glpi-mariadb.service
+
+[Container]
+Image=docker.io/diouxx/glpi:latest
+Pod=glpi-pod.pod
+EnvironmentFile=ENV_FILE_PLACEHOLDER
+Environment=MYSQL_HOST=127.0.0.1
+Volume=CONFIG_VOLUME_PLACEHOLDER
+Volume=FILES_VOLUME_PLACEHOLDER
+Volume=PLUGINS_VOLUME_PLACEHOLDER
+HealthCmd=curl -f http://localhost:80/status.php || exit 1
+HealthInterval=30s
+HealthTimeout=15s
+HealthRetries=3
+
+[Install]
+WantedBy=default.target

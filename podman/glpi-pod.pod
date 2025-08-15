@@ -1,0 +1,11 @@
+[Unit]
+Description=GLPI Pod
+After=network-online.target
+Wants=network-online.target
+
+[Pod]
+Network=bridge
+PublishPort=8081:80
+
+[Install]
+WantedBy=default.target
