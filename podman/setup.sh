@@ -45,8 +45,11 @@ sed -i "s|PLUGINS_VOLUME_PLACEHOLDER|${GLPI_VOLUMES}/plugins:/var/www/html/plugi
 # Reload systemd to recognize new quadlets
 systemctl --user daemon-reload
 
+# Quadlets are created - systemd will manage them
+printf "Quadlet files created successfully.\n"
+
 printf "\n=== GLPI Setup Complete ===\n"
-printf "GLPI is available at: http://localhost:8081\n"
-printf "Default credentials: glpi / glpi\n"
-printf "\nTo enable auto-start: systemctl --user enable glpi-pod.service\n"
-printf "To manage: systemctl --user {start,stop,restart} glpi-pod.service\n"
+printf "GLPI Quadlet files have been created.\n"
+printf "To start GLPI: systemctl --user start glpi-pod.service\n"
+printf "To enable auto-start: systemctl --user enable glpi-pod.service\n"
+printf "Access GLPI at: http://localhost:8081 (glpi/glpi)\n"
