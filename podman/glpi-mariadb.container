@@ -5,10 +5,10 @@ Wants=network-online.target
 
 [Container]
 Image=docker.io/library/mariadb:10.6
-Pod=glpi-pod.pod
+PodmanArgs=--pod glpi-pod
 EnvironmentFile=ENV_FILE_PLACEHOLDER
 Volume=MARIADB_VOLUME_PLACEHOLDER
-HealthCmd=mysqladmin ping -h localhost
+HealthCmd=mysqladmin ping -h localhost --user=healthcheck --password=healthcheck
 HealthInterval=30s
 HealthTimeout=10s
 HealthRetries=3

@@ -17,6 +17,7 @@ services:
       - MYSQL_USER=${GLPI_DB_USER}
       - MYSQL_PASSWORD=${GLPI_PASSWORD}
       - TZ=${TZ}
+      - TIMEZONE=${TZ}
 
     volumes:
       - ./volumes/glpi/config:/var/www/html/config

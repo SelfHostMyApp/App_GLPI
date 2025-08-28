@@ -20,15 +20,66 @@ if [ ! -d "$GLPI_VOLUMES" ]; then
     exit 1
 fi
 
-# Quadlets will manage the containers - no manual podman commands needed
-printf "Quadlets will handle container creation via systemd...\n"
+# Check Podman version for .pod Quadlet support
+PODMAN_VERSION=$(podman --version | grep -oE '[0-9]+\.[0-9]+' | head -1)
+PODMAN_MAJOR=$(echo "$PODMAN_VERSION" | cut -d. -f1)
+
+if [ "$PODMAN_MAJOR" -lt 5 ]; then
+    printf "Podman %s detected - .pod Quadlets not supported, creating pod manually...\n" "$PODMAN_VERSION"
+    
+    # Parse pod file to extract configuration
+    POD_FILE="${GLPI_DIR}/glpi.pod"
+    if [ -f "$POD_FILE" ]; then
+        # Extract publish ports from pod file
+        PUBLISH_PORTS=$(grep "^PublishPort=" "$POD_FILE" | sed 's/PublishPort=/--publish /' | tr '\n' ' ')
+        
+        # Remove existing pod and its containers if it exists
+        if podman pod exists glpi-pod; then
+            printf "Cleaning up existing pod 'glpi-pod'...\n"
+            # Force stop and remove all containers in the pod first
+            podman pod stop glpi-pod 2>/dev/null || true
+            podman ps -a --pod --filter pod=glpi-pod --format "{{.ID}}" | xargs -r podman rm -f 2>/dev/null || true
+            # Now remove the pod
+            podman pod rm -f glpi-pod 2>/dev/null || true
+            # Verify pod is gone
+            if podman pod exists glpi-pod; then
+                printf "Error: Failed to remove existing pod 'glpi-pod'\n"
+                exit 1
+            fi
+        fi
+        
+        # Create pod with extracted configuration
+        podman pod create --name glpi-pod $PUBLISH_PORTS
+        printf "Created pod 'glpi-pod' with ports: %s\n" "$PUBLISH_PORTS"
+    else
+        printf "Warning: Pod file %s not found, creating basic pod\n" "$POD_FILE"
+        # Remove existing pod and its containers if it exists
+        if podman pod exists glpi-pod; then
+            printf "Cleaning up existing pod 'glpi-pod'...\n"
+            # Force stop and remove all containers in the pod first
+            podman pod stop glpi-pod 2>/dev/null || true
+            podman ps -a --pod --filter pod=glpi-pod --format "{{.ID}}" | xargs -r podman rm -f 2>/dev/null || true
+            # Now remove the pod
+            podman pod rm -f glpi-pod 2>/dev/null || true
+            # Verify pod is gone
+            if podman pod exists glpi-pod; then
+                printf "Error: Failed to remove existing pod 'glpi-pod'\n"
+                exit 1
+            fi
+        fi
+        podman pod create --name glpi-pod --publish 8081:80
+    fi
+else
+    printf "Podman %s supports .pod Quadlets - systemd will handle pod creation...\n" "$PODMAN_VERSION"
+fi
 
 # Create Quadlet files for systemd integration using templates
 printf "Creating Quadlet files...\n"
 mkdir -p "${HOME}/.config/containers/systemd"
+chmod 755 "${HOME}/.config/containers/systemd"
 
 # Copy and configure pod quadlet from local template
-cp "${GLPI_DIR}/glpi-pod.pod" "${HOME}/.config/containers/systemd/glpi-pod.pod"
+cp "${GLPI_DIR}/glpi.pod" "${HOME}/.config/containers/systemd/glpi.pod"
 
 # Copy and configure MariaDB container quadlet from local template
 cp "${GLPI_DIR}/glpi-mariadb.container" "${HOME}/.config/containers/systemd/glpi-mariadb.container"
@@ -36,11 +87,15 @@ sed -i "s|ENV_FILE_PLACEHOLDER|${GLPI_DIR}/glpi.env|g" "${HOME}/.config/containe
 sed -i "s|MARIADB_VOLUME_PLACEHOLDER|${GLPI_VOLUMES}/mariadb:/var/lib/mysql|g" "${HOME}/.config/containers/systemd/glpi-mariadb.container"
 
 # Copy and configure GLPI app container quadlet from local template
-cp "${GLPI_DIR}/glpi-app.container" "${HOME}/.config/containers/systemd/glpi-app.container"
-sed -i "s|ENV_FILE_PLACEHOLDER|${GLPI_DIR}/glpi.env|g" "${HOME}/.config/containers/systemd/glpi-app.container"
-sed -i "s|CONFIG_VOLUME_PLACEHOLDER|${GLPI_VOLUMES}/config:/var/www/html/config|g" "${HOME}/.config/containers/systemd/glpi-app.container"
-sed -i "s|FILES_VOLUME_PLACEHOLDER|${GLPI_VOLUMES}/files:/var/www/html/files|g" "${HOME}/.config/containers/systemd/glpi-app.container"
-sed -i "s|PLUGINS_VOLUME_PLACEHOLDER|${GLPI_VOLUMES}/plugins:/var/www/html/plugins|g" "${HOME}/.config/containers/systemd/glpi-app.container"
+cp "${GLPI_DIR}/glpi.container" "${HOME}/.config/containers/systemd/glpi.container"
+sed -i "s|ENV_FILE_PLACEHOLDER|${GLPI_DIR}/glpi.env|g" "${HOME}/.config/containers/systemd/glpi.container"
+sed -i "s|CONFIG_VOLUME_PLACEHOLDER|${GLPI_VOLUMES}/config:/var/www/html/config|g" "${HOME}/.config/containers/systemd/glpi.container"
+sed -i "s|FILES_VOLUME_PLACEHOLDER|${GLPI_VOLUMES}/files:/var/www/html/files|g" "${HOME}/.config/containers/systemd/glpi.container"
+sed -i "s|PLUGINS_VOLUME_PLACEHOLDER|${GLPI_VOLUMES}/plugins:/var/www/html/plugins|g" "${HOME}/.config/containers/systemd/glpi.container"
+
+# Set proper permissions for Quadlet files (systemd generators need to read them)
+chmod 644 "${HOME}/.config/containers/systemd"/*.pod
+chmod 644 "${HOME}/.config/containers/systemd"/*.container
 
 # Reload systemd to recognize new quadlets
 systemctl --user daemon-reload
@@ -48,8 +103,11 @@ systemctl --user daemon-reload
 # Quadlets are created - systemd will manage them
 printf "Quadlet files created successfully.\n"
 
+
+# Start GLPI services (Quadlet-generated services can't be enabled)
+printf "Starting GLPI services...\n"
+systemctl --user start glpi-mariadb.service glpi.service
+
 printf "\n=== GLPI Setup Complete ===\n"
-printf "GLPI Quadlet files have been created.\n"
-printf "To start GLPI: systemctl --user start glpi-pod.service\n"
-printf "To enable auto-start: systemctl --user enable glpi-pod.service\n"
+printf "GLPI services have been started.\n"
 printf "Access GLPI at: http://localhost:8081 (glpi/glpi)\n"

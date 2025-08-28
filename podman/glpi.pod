@@ -4,6 +4,7 @@ After=network-online.target
 Wants=network-online.target
 
 [Pod]
+PodName=glpi.pod
 Network=bridge
 PublishPort=8081:80
 

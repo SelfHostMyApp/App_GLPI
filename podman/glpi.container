@@ -5,9 +5,14 @@ Wants=glpi-mariadb.service
 
 [Container]
 Image=docker.io/diouxx/glpi:latest
-Pod=glpi-pod.pod
+PodmanArgs=--pod glpi-pod
 EnvironmentFile=ENV_FILE_PLACEHOLDER
 Environment=MYSQL_HOST=127.0.0.1
+Environment=MYSQL_DATABASE=glpi
+Environment=MYSQL_USER=glpi
+Environment=MYSQL_PASSWORD=glpi_secure_password
+Environment=TZ=UTC
+Environment=TIMEZONE=UTC
 Volume=CONFIG_VOLUME_PLACEHOLDER
 Volume=FILES_VOLUME_PLACEHOLDER
 Volume=PLUGINS_VOLUME_PLACEHOLDER
